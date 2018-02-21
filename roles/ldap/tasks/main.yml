@@ -63,16 +63,22 @@
 
 - name: Ensure the ldap admin credentials are set
   command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_ldif_dir }}/set_root_credentials.ldif"
+  register: result
+  failed_when: "result.rc not in [0,20,68]"
+  changed_when: "result.rc not in [20,68]"
 
 - name: Set loglevel to stats
   command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_ldif_dir }}/set_loglevel_stats.ldif"
+  register: result
+  failed_when: "result.rc not in [0,20,68]"
+  changed_when: "result.rc not in [20,68]"
 
 - name: Enable synchronization
   command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_ldif_dir }}/enable_syncprov.ldif"
-  register: ldap_sync_enable
   # return code 20 means entry already exists
-  failed_when: "ldap_sync_enable.rc!=0 and ldap_sync_enable.rc!=20"
-  changed_when: "ldap_sync_enable.rc!=20"
+  register: result
+  failed_when: "result.rc not in [0,20,68]"
+  changed_when: "result.rc not in [20,68]"
 
 - name: Check for presence of eduPerson ldif
   stat:
@@ -156,6 +162,7 @@
     ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b 'cn=schema,cn=config' '(cn=*)' dn
     | grep -i 'cn={[0123456789]\+}eduperson,cn=schema,cn=config'
   failed_when: not [0, 1]
+  changed_when: false
   register:
     eduPersonSchemaPresent
 
@@ -169,12 +176,16 @@
     -f {{ ldap_schema_dir }}/{{ eduPersonSchema_ldif }}
     -D "cn=config" -w "{{ ldap_password }}"
   when: eduPersonSchemaPresent.stdout == ""
+  register: result
+  failed_when: "result.rc not in [0,20,68]"
+  changed_when: "result.rc not in [20,68]"
 
 - name: Check if the ldapPublicKey schema is already present
   shell: >
     ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b 'cn=schema,cn=config' '(cn=*)' dn
     | grep -i 'cn={[0-9]\+}openssh-lpk-openldap,cn=schema,cn=config'
   failed_when: not [0, 1]
+  changed_when: false
   register:
     ldapPublicKeyTask
 
@@ -185,12 +196,16 @@
     -f "{{ ldap_schema_dir }}/{{ ldapPublicKey_ldif }}"
     -D "cn=config" -w "{{ ldap_password }}"
   when: ldapPublicKeyTask.stdout == ""
+  register: result
+  failed_when: "result.rc not in [0,20,68]"
+  changed_when: "result.rc not in [20,68]"
 
 - name: Check if the eduMember schema is already present
   shell: >
     ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b 'cn=schema,cn=config' '(cn=*)' dn
     | grep -i 'cn={[0-9]\+}edumember,cn=schema,cn=config'
   failed_when: not [1, 2]
+  changed_when: false
   register:
     eduMemberTask
 
@@ -201,19 +216,24 @@
     -f "{{ ldap_schema_dir }}/{{ eduMember_ldif }}"
     -D "cn=config" -w "{{ ldap_password }}"
   when: eduMemberTask.stdout == ""
+  register: result
+  failed_when: "result.rc not in [0,20,68]"
+  changed_when: "result.rc not in [20,68]"
 
 - name: Check if DIT has been created before
   command:
     ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b "{{ ldap.basedn }}" "(ou=group)" dn
   register: emptyDIT
   failed_when: "emptyDIT.rc not in [0, 32]"
+  changed_when: false
 
 - name: Initialize DIT
   command: >
     ldapadd -c -x -D "{{ ldap.binddn }}" -w "{{ ldap_password }}"
     -f "{{ ldap_ldif_dir }}/initial_setup.ldif"
   register: result
-  failed_when: "(result.rc not in [0, 68])"
+  failed_when: "result.rc not in [0,20,68]"
+  changed_when: "result.rc not in [20,68]"
   tags: ldap
   when: emptyDIT.stdout == ""
 
