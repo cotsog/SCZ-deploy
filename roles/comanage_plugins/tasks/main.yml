@@ -8,6 +8,9 @@
     - CoServiceToken
     - LdapServiceTokenProvisioner
     - EmailUidEnroller
+  notify:
+    - Clear Cake cache
+    - Setup Plugin schemata
 
 - name: Set Database configuration for external Proxy database
   blockinfile:
@@ -24,6 +27,9 @@
       'database' => '{{ comanage_proxy_db_name }}',
       'prefix' => '',
       );
+  notify:
+    - Clear Cake cache
+    - Setup Plugin schemata
 
 - name: Checkout the relevant Git based plugins
   git:
@@ -32,6 +38,9 @@
     version: "{{ item.version }}"
   with_items: "{{ comanage_git_plugins }}"
   become: yes
+  notify:
+    - Clear Cake cache
+    - Setup Plugin schemata
 
 - name: Install configurations
   template:
@@ -39,17 +48,7 @@
     dest: "{{ comanage_path }}/app/Config/{{ item.dest }}"
   with_items: "{{ comanage_plugin_configurations }}"
   become: yes
+  notify:
+    - Clear Cake cache
+    - Setup Plugin schemata
 
-- name: Clearing Cake cache
-  command: ./Console/cake cache
-  become: true
-  become_user: "{{ comanage_www_user }}"
-  args:
-    chdir: "{{ comanage_path }}/app"
-
-- name: Setup Plugin schemata
-  command: ./Console/cake database
-  become: true
-  become_user: "{{ comanage_www_user }}"
-  args:
-    chdir: "{{ comanage_path }}/app"
