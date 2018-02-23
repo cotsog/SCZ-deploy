@@ -1,24 +1,13 @@
 ---
-- name: Activate Service Token Plugin
+- name: Activate plugins
   file:
-    src: "{{ comanage_path }}/app/AvailablePlugin/CoServiceToken"
-    dest: "{{ comanage_path }}/local/Plugin/CoServiceToken"
+    src: "{{ comanage_path }}/app/AvailablePlugin/{{item}}"
+    dest: "{{ comanage_path }}/local/Plugin/{{item}}"
     state: link
-  become: Yes
-
-- name: Activate LDAP Service Token Plugin
-  file:
-    src: "{{ comanage_path }}/app/AvailablePlugin/LdapServiceTokenProvisioner"
-    dest: "{{ comanage_path }}/local/Plugin/LdapServiceTokenProvisioner"
-    state: link
-  become: Yes
-
-- name: Activate Email Uid Enroller Plugin
-  file:
-    src: "{{ comanage_path }}/app/AvailablePlugin/EmailUidEnroller"
-    dest: "{{ comanage_path }}/local/Plugin/EmailUidEnroller"
-    state: link
-  become: Yes
+  with_items:
+    - CoServiceToken
+    - LdapServiceTokenProvisioner
+    - EmailUidEnroller
 
 - name: Checkout the relevant Git based plugins
   git:
