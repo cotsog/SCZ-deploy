@@ -9,21 +9,6 @@
     - LdapServiceTokenProvisioner
     - EmailUidEnroller
 
-- name: Checkout the relevant Git based plugins
-  git:
-    repo: "{{ item.src }}"
-    dest: "{{ comanage_path }}/local/Plugin/{{ item.name }}"
-    version: "{{ item.version }}"
-  with_items: "{{ comanage_git_plugins }}"
-  become: yes
-
-- name: Install configurations
-  template:
-    src: "{{ item.src }}"
-    dest: "{{ comanage_path }}/app/Config/{{ item.dest }}"
-  with_items: "{{ comanage_plugin_configurations }}"
-  become: yes
-
 - name: Set Database configuration for external Proxy database
   blockinfile:
     path: "{{ comanage_path }}/local/Config/database.php"
@@ -39,6 +24,21 @@
       'database' => '{{ comanage_proxy_db_name }}',
       'prefix' => '',
       );
+
+- name: Checkout the relevant Git based plugins
+  git:
+    repo: "{{ item.src }}"
+    dest: "{{ comanage_path }}/local/Plugin/{{ item.name }}"
+    version: "{{ item.version }}"
+  with_items: "{{ comanage_git_plugins }}"
+  become: yes
+
+- name: Install configurations
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ comanage_path }}/app/Config/{{ item.dest }}"
+  with_items: "{{ comanage_plugin_configurations }}"
+  become: yes
 
 - name: Clearing Cake cache
   command: ./Console/cake cache
