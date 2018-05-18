@@ -9,6 +9,7 @@
 
 - name: Upgrade packages
   apt: upgrade=dist
+  when: "environment_name != 'vm'"
 
 - name: Install common tools / clients
   apt: name={{ item }} state=present
@@ -28,6 +29,7 @@
   apt: name={{ item }} state=absent
   with_items:
     - nfs-common
+    - rpcbind
     - cloud-init
 
 - name: install VMware clients

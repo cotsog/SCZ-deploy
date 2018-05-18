@@ -31,6 +31,7 @@
         version: "{{ pyff_repo_version }}"
         accept_hostkey: "yes"
         force: "yes"
+      register: fetch_pyff
 
     - name: install pyFF from {{ pyff_src_dir }} to {{ pyff_env_dir }}
       pip:
@@ -39,6 +40,7 @@
         virtualenv_python: python2
         state: latest
         #executable: pip2
+      when: fetch_pyff.changed
 
     - name: Create pyFF mdq configuration
       template: src=mdq.fd.j2
@@ -95,6 +97,11 @@
     src=rsyslog_pyffd.conf
     dest=/etc/rsyslog.d/pyffd.conf
   notify: "restart rsyslog"
+
+- name: Copy logrotate config
+  copy: >
+    src=logrotate_pyffd
+    dest=/etc/logrotate.d/pyffd
 
 - name: restart pyff
   systemd: daemon_reload=yes name=pyff state=restarted enabled=yes

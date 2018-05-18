@@ -14,6 +14,10 @@ satosa_project_dir: "/opt/satosa"
 satosa_src_dir: "{{ satosa_project_dir }}/satosa-src"
 satosa_env_dir: "{{ satosa_project_dir }}/satosa-env"
 
+satosa_microservices_repo_url: "https://github.com/SURFscz/SATOSA-micro_services.git"
+satosa_microservices_repo_version: "master"
+satosa_microservices_src_dir: "{{ satosa_project_dir }}/satosa-microservices"
+
 satosa_host: "0.0.0.0"
 satosa_port: "8080"
 satosa_state_encryption_key: "poikjh567"
@@ -22,9 +26,8 @@ satosa_user_id_hash_salt: "59o3gaxfwg0svem1n1g3tk22i9mihcom"
 mongodb_host: "127.0.0.1"
 
 # pyFF configuration
-#pyff_repo_url: "https://github.com/leifj/pyFF.git"
-#pyff_repo_version: "e914e97183034c998cda22f5813ca57d072ac118"
-pyff_repo_version: "0.10.0-fix"
+pyff_repo_url: "https://github.com/SURFscz/pyFF.git"
+pyff_repo_version: "scz"
 pyff_project_dir: "/opt/pyff"
 pyff_src_dir: "{{ pyff_project_dir }}/pyff-src"
 pyff_env_dir: "{{ pyff_project_dir }}/pyff-env"

@@ -46,6 +46,17 @@
         force: "yes"
       register: satosa_git
 
+    - name: >
+        fetch SATOSA micro_services from {{ satosa_microservices_repo_url }},
+        version {{ satosa_microservices_repo_version }}
+      git:
+        repo: "{{ satosa_microservices_repo_url }}"
+        dest: "{{ satosa_microservices_src_dir }}"
+        version: "{{ satosa_microservices_repo_version }}"
+        accept_hostkey: "yes"
+        force: "yes"
+      register: satosa_microservices_git
+
     - name: install SATOSA from {{ satosa_src_dir }} to {{ satosa_env_dir }}
       pip:
         name: "{{ satosa_src_dir }}"
@@ -54,14 +65,24 @@
         state: latest
       when: satosa_git.changed
 
+    - name: >
+        install SATOSA microservices from {{ satosa_microservices_src_dir }}
+        to {{ satosa_env_dir }}
+      pip:
+        name: "{{ satosa_microservices_src_dir }}"
+        virtualenv: "{{ satosa_env_dir }}"
+        virtualenv_python: python3
+        state: latest
+      when: satosa_microservices_git.changed
+
     - name: Create SATOSA  proxy_conf configuration
       template:
         src: proxy_conf.yaml.j2
         dest: "{{ satosa_env_dir }}/proxy_conf.yaml"
 
     - name: Copy internal_attributes.yaml definition
-      copy:
-        src: internal_attributes.yaml
+      template:
+        src: internal_attributes.yaml.j2
         dest: "{{ satosa_env_dir }}/internal_attributes.yaml"
 
     - name: Create backends directory
@@ -119,15 +140,10 @@
         src: r_and_s_acl.yaml.j2
         dest: "{{ satosa_env_dir }}/plugins/micro_services/r_and_s_acl.yaml"
 
-    - name: Create attribute_filter_pre.yaml definition
+    - name: Create attribute_filter.yaml definition
       template:
-        src: attribute_filter_pre.yaml.j2
-        dest: "{{ satosa_env_dir }}/plugins/micro_services/attribute_filter_pre.yaml"
-
-    - name: Create attribute_filter_post.yaml definition
-      template:
-        src: attribute_filter_post.yaml.j2
-        dest: "{{ satosa_env_dir }}/plugins/micro_services/attribute_filter_post.yaml"
+        src: attribute_filter.yaml.j2
+        dest: "{{ satosa_env_dir }}/plugins/micro_services/attribute_filter.yaml"
 
     - name: Create custom_uid.yaml definition
       template:
@@ -184,11 +200,14 @@
       file: path="{{ satosa_env_dir }}/keys" state=directory mode=0755
 
     - name: Create satosa private key (for CMservice)
-      command: >
-        openssl req -newkey rsa:2048 -new -x509 -days 3652 -nodes
-          -subj '/CN=localhost'
-          -out "{{ satosa_env_dir }}/keys/satosa.pub"
-          -keyout "{{ satosa_env_dir }}/keys/satosa.pem"
+      shell: "openssl genpkey -algorithm RSA -out '{{ satosa_env_dir }}/keys/satosa.pem' \
+                              -pkeyopt rsa_keygen_bits:2048"
+      args:
+        creates: "{{ satosa_env_dir }}/keys/satosa.pem"
+
+    - name: Extract satosa public key (for CMservice)
+      shell: "openssl rsa -pubout -in '{{ satosa_env_dir }}/keys/satosa.pem' \
+                          -out '{{ satosa_env_dir }}/keys/satosa.pub'"
       args:
         creates: "{{ satosa_env_dir }}/keys/satosa.pub"
 
@@ -237,11 +256,13 @@
       get_url:
         url: https://{{ hostnames.sp }}/saml/module.php/saml/sp/metadata.php/default-sp
         dest: "{{ satosa_env_dir }}/metadata/sp-test.xml"
+        force: yes
 
     - name: Retreive Test IdP metadata
       get_url:
         url: https://{{ hostnames.idp }}/saml/saml2/idp/metadata.php
         dest: "{{ satosa_env_dir }}/metadata/idp-test.xml"
+        force: yes
 
     - name: Copy metadata generating script
       copy:
@@ -291,6 +312,11 @@
     src=rsyslog_satosa.conf
     dest=/etc/rsyslog.d/satosa.conf
   notify: "restart rsyslog"
+
+- name: Copy logrotate config
+  copy: >
+    src=logrotate_satosa
+    dest=/etc/logrotate.d/satosa
 
 - name: restart SATOSA
   systemd: daemon_reload=yes name=satosa state=restarted enabled=yes

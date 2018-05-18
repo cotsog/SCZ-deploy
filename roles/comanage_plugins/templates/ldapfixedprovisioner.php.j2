@@ -29,10 +29,10 @@ $config=array(
       'organizationalPerson',   # required
       'inetOrgPerson',          # required
       'eduPerson',              # optional
-      'groupOfNames',           # optional
-      'eduMember',              # optional
-#     'posixAccount',           # optional
+      'posixAccount',           # optional
       'ldapPublicKey',          # optional
+      'posixGroup',             # optional
+      'eduMember',              # optional
     ),
     'person' => array(
       'sn' => 'official',              # required
@@ -58,7 +58,7 @@ $config=array(
 #     'employeeNumber' => 'enterprise', # optional
 #     'employeeType' => TRUE,        # optional
 #     'roomNumber' => TRUE,          # optional
-#     'uid' => 'uid',                # optional
+     'uid' => 'uid;person',                # optional
     ),
     'eduPerson' => array(
 #     'eduPersonAffiliation' => TRUE,               # optional
@@ -70,16 +70,6 @@ $config=array(
 #     'eduPersonScopedAffiliation' => TRUE,         # optional
 #     'eduPersonUniqueId' => 'enterprise',          # optional
     ),
-    'groupOfNames' => array(
-      'cn' => TRUE,          # required
-      'member' => TRUE,      # required
-#     'owner' => TRUE,       # optional
-     'description' => TRUE, # optional
-    ),
-    'eduMember' => array(
-      'isMemberOf' => TRUE,   # optional
-      'hasMember' => 'uid',   # optional
-    ),
     'posixAccount' => array(
       'uidNumber' => TRUE,     # required
       'gidNumber' => TRUE,     # required
@@ -89,7 +79,24 @@ $config=array(
     ),
     'ldapPublicKey' => array(
       'sshPublicKey' => TRUE,  # required
-      'uid' => 'uid'            # required
-    )
+      'uid' => 'uid;person'           # required
+    ),
+    'posixGroup' => array(
+      'cn' => TRUE,            # required
+      'gidNumber' => TRUE,     # required
+#     'userPassword' => TRUE,  # optional
+#     'memberUID' => TRUE,     # optional
+#     'description' => TRUE,   # optional
+    ),
+    'groupOfNames' => array(
+      'cn' => TRUE,          # required
+      'member' => TRUE,      # required
+#     'owner' => TRUE,       # optional
+     'description' => TRUE, # optional
+    ),
+    'eduMember' => array(
+      'isMemberOf' => TRUE,   # optional
+      'hasMember' => 'uid;person',   # optional
+    ),
   )
 );

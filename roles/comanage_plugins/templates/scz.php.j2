@@ -2,9 +2,9 @@
 $config=array(
   'scz' => array(
     'scope_suffix'  => '{{ comanage_scope }}',
-    'uid' => 'cmuid',
+    'uid' => '{{ comanage_proxy_attribute }}',
     'attributes' => array(
-      'cmuid' => array('attribute'=>'uid','use_org'=>True, 'type'=>'eppn'),
+      '{{ comanage_proxy_attribute }}' => array('attribute'=>'uid','use_org'=>True, 'type'=>'eppn'),
       'cn' => array('multiple'=>'single'),
       'urn:oid:2.5.4.3' => array('attribute'=>'cn', 'multiple'=>'single'),
       'givenName'=>array('multiple'=>'single'),
@@ -56,6 +56,7 @@ $config=array(
       'urn:oid:1.3.6.1.4.1.5923.1.5.1.1' => array('attribute'=>'isMemberOf'),
       'eduPersonEntitlement' => array(),
       'urn:oid:1.3.6.1.4.1.5923.1.1.1.7' => array('attribute'=>'eduPersonEntitlement'),
+      'sshPublicKey' => array(),
     ),
   )
 );
