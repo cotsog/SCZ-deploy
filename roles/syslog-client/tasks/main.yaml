@@ -35,6 +35,5 @@
         src: fb_syslog.yml.j2
         dest: /etc/filebeat/conf.d/fb_syslog.yml
       notify: restart filebeat
-      when: false
 
   when: use_logserver
