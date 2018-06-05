@@ -5,11 +5,6 @@
 
 - block:
 
-    - name: Ensure that apt-transport-https is installed
-      apt:
-        name: apt-transport-https
-        state: present
-
     - name: Add Elesticsearch key
       apt_key:
         #url: https://artifacts.elastic.co/GPG-KEY-elasticsearch

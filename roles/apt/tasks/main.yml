@@ -1,4 +1,10 @@
 ---
+
+- name: install apt-transport-https
+  apt:
+    name: apt-transport-https
+    state: present
+
 - name: set up apt repo
   template: src=sources.list.j2 dest=/etc/apt/sources.list force=yes
   when: ansible_virtualization_type != "docker"
