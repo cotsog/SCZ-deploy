@@ -18,7 +18,7 @@
     - kibana
 
 - name: Ensure Elasticsearch data directory exists
-  file: path=/var/elasticsearch state=directory mode=0750 owner=elasticsearch
+  file: path=/var/elasticsearch state=directory mode=0755 owner=elasticsearch
 
 - name: Copy elasticsearch configuration file
   copy:
