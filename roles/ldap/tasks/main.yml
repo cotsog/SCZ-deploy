@@ -115,20 +115,14 @@
     -D "cn=config" -w "{{ ldap_password }}"
   when: item not in ldap_schemas_present.stdout
   with_items: "{{ ldap_schemas }}"
-- name: Check if DIT has been created before
-  command:
-    ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b "{{ ldap.basedn }}" "(ou=group)" dn
-  register: emptyDIT
-  failed_when: "emptyDIT.rc not in [0, 32]"
 
 - name: Initialize DIT
   command: >
     ldapadd -c -x -D "{{ ldap.binddn }}" -w "{{ ldap_password }}"
-    -f "{{ ldap_ldif_dir }}/initial_setup.ldif"
+    -f "{{ ldap_schema_dir }}/initial_setup.ldif"
   register: result
-  failed_when: "(result.rc not in [0, 68])"
-  tags: ldap
-  when: emptyDIT.stdout == ""
+  failed_when: "result.rc not in [0, 68]"
+  changed_when: "result.rc != 68"
 
 - name: Redirect slapd log to /var/log/slapd.log
   copy:
