@@ -55,12 +55,28 @@
     mode: 0644
   with_items:
     - { src: "initial_setup.ldif.j2", dest: "initial_setup.ldif" }
-    - { src: "set_root_credentials.ldif.j2", dest: "set_root_credentials.ldif" }
     - { src: "set_loglevel_stats.ldif.j2", dest: "set_loglevel_stats.ldif" }
     - { src: "enable_syncprov.ldif.j2", dest: "enable_syncprov.ldif" }
 
-- name: Ensure the ldap admin credentials are set
-  command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_ldif_dir }}/set_root_credentials.ldif"
+- name: Set database suffix
+  ldap_attr:
+    dn: "olcDatabase={1}mdb,cn=config"
+    name: "olcSuffix"
+    values: "{{ ldap.basedn }}"
+
+- name: Set ldap admin user
+  ldap_attr:
+    dn: "olcDatabase={1}mdb,cn=config"
+    name: "olcRootDN"
+    values: "{{ ldap.binddn }}"
+
+- name: Set ldap admin password
+  ldap_attr:
+    dn: "olcDatabase={1}mdb,cn=config"
+    name: "olcRootPW"
+    values: "{{ ldap_password | slapd_hash }}"
+    state: exact
+
 
 - name: Set loglevel to stats
   command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_ldif_dir }}/set_loglevel_stats.ldif"
