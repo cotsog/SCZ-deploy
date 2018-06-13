@@ -2,19 +2,25 @@
 # playbook to install and configure general components of the LDAP
 - include_vars: "ldap.yml"
 
-- name: Install LDAP
+- name: Install LDAP utils
   apt:
     state: present
     name:
-      - slapd
       - ldap-utils
+      - python-ldap
+
+- name: Install LDAP
+  apt: state=present name=slapd
+  notify: restart LDAP
 
 - name: Copying alternative service script
   become: true
   copy:
     src: slapd.service
     dest: /etc/systemd/system
-  notify: systemd daemon-reload
+  notify:
+    - systemd daemon-reload
+    - restart LDAP
   when: ansible_virtualization_type == "docker"
 
 - name: Ensure that a number of directories exist
@@ -32,8 +38,6 @@
     - "{{ ldap_download_dir }}"
     - /var/run/slapd
 
-- name: Enable LDAP
-  service: name=slapd state=restarted enabled=yes
 
 - name: Copy schema2ldif
   become_user: "{{ ldap_user }}"
