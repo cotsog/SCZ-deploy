@@ -55,7 +55,6 @@
     mode: 0644
   with_items:
     - { src: "initial_setup.ldif.j2", dest: "initial_setup.ldif" }
-    - { src: "set_loglevel_stats.ldif.j2", dest: "set_loglevel_stats.ldif" }
     - { src: "enable_syncprov.ldif.j2", dest: "enable_syncprov.ldif" }
 
 - name: Set database suffix
@@ -79,7 +78,11 @@
 
 
 - name: Set loglevel to stats
-  command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_ldif_dir }}/set_loglevel_stats.ldif"
+  #command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_schema_dir }}/set_loglevel_stats.ldif"
+  ldap_attr:
+    dn: "cn=config"
+    name: "olcLogLevel"
+    values: "stats"
 
 - name: Enable synchronization
   command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_ldif_dir }}/enable_syncprov.ldif"
