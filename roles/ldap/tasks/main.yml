@@ -34,10 +34,20 @@
   with_items:
     - "{{ ldap_bin_dir }}"
     - "{{ ldap_schema_dir }}"
-    - "{{ ldap_ldif_dir }}"
-    - "{{ ldap_download_dir }}"
     - /var/run/slapd
 
+- name: Remove old ldap schema files
+  file:
+    path: "{{item}}"
+    state: absent
+  with_items:
+    - "{{ ldap_schema_dir }}/eduMember.ldif"
+    - "{{ ldap_schema_dir }}/eduMember.schema"
+    - "{{ ldap_schema_dir }}/openLdapEduperson-201602DV.ldif"
+    - "{{ ldap_schema_dir }}/openssh-lpk-openldap.ldif"
+    - "{{ ldap_schema_dir }}/openssh-lpk-openldap.schema"
+    - "/etc/ldap/downloads/2xOpenLdapEduPerson-201602.zip"
+    - "/etc/ldap/downloads"
 
 - name: Copy schema2ldif
   become_user: "{{ ldap_user }}"
@@ -51,7 +61,7 @@
   become: true
   template:
     src: "{{ item.src }}"
-    dest: "{{ ldap_ldif_dir }}/{{ item.dest }}"
+    dest: "{{ ldap_schema_dir }}/{{ item.dest }}"
     mode: 0644
   with_items:
     - { src: "initial_setup.ldif.j2", dest: "initial_setup.ldif" }
@@ -85,7 +95,7 @@
     values: "stats"
 
 - name: Enable synchronization
-  command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_ldif_dir }}/enable_syncprov.ldif"
+  command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_schema_dir }}/enable_syncprov.ldif"
   register: ldap_sync_enable
   # return code 20 means entry already exists
   failed_when: "ldap_sync_enable.rc!=0 and ldap_sync_enable.rc!=20"
