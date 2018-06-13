@@ -1,4 +1,9 @@
 ---
+ldap_schemas:
+  - "eduperson"
+  - "eduMember"
+  - "openssh-lpk-openldap"
+  - "voperson"
 packages:
   - slapd
   - ldap-utils

@@ -91,164 +91,30 @@
   failed_when: "ldap_sync_enable.rc!=0 and ldap_sync_enable.rc!=20"
   changed_when: "ldap_sync_enable.rc!=20"
 
-- name: Check for presence of eduPerson ldif
-  stat:
-    path: "{{ ldap_schema_dir }}/{{ eduPersonSchema_ldif }}"
-  register: edupersonstat
-
-- name: Check for presence of LdapPublicKey ldif
-  stat:
-    path: "{{ ldap_schema_dir }}/{{ ldapPublicKey_ldif }}"
-  register: ldappkstat
-
-- name: Check for presence of eduMember ldif
-  stat:
-    path: "{{ ldap_schema_dir }}/{{ eduMember_ldif }}"
-  register: edumemberstat
-
-- name: Check for presence of voPerson ldif
-  stat:
-    path: "{{ ldap_schema_dir }}/{{ voPerson_ldif }}"
-  register: vopersonstat
-
-- name: Fetch the eduPerson schema
-  become: true
-  get_url:
-    owner: "{{ ldap_user }}"
-    group: "{{ ldap_user }}"
-    url: "{{ eduPersonSchema_url }}"
-    dest: "{{ ldap_download_dir }}"
-  when:  edupersonstat.stat.exists == False
-
-# Of course the unarchive module should be used here, but the things is,
-# it seems broken in 2.2.0, although it should be fixed in 2.1.1. I guess
-# porting the fix to 2.2.0 has been forgotten...
-- name: Unzipping downloaded schema
-  become_user: "{{ ldap_user }}"
-  become: true
-  command: unzip -o "{{ ldap_download_dir }}/{{ eduPersonSchema_zip }}" -d /tmp
-  when: edupersonstat.stat.exists == False
-
-- name: Copy the unpacked ldifs
-  become: true
-  become_user: "{{ ldap_user }}"
+- name: Copy ldap schemas
   copy:
-    src: /tmp/{{ eduPersonSchema_ldif }}
-    dest: "{{ ldap_schema_dir }}/{{ eduPersonSchema_ldif }}"
-    remote_src: true
+    src: "schema-{{ item }}.ldif"
+    dest: "{{ ldap_schema_dir }}"
     owner: "{{ ldap_user }}"
     group: "{{ ldap_user }}"
-  when: edupersonstat.stat.exists == False
+  with_items: "{{ ldap_schemas }}"
 
-- name: Fetch LdapPublicKey schema
-  become: true
-  get_url:
-    owner: "{{ ldap_user }}"
-    group: "{{ ldap_user }}"
-    url: "{{ ldapPublicKeySchema_url }}"
-    dest: "{{ ldap_schema_dir }}/{{ ldapPublicKey }}.schema"
-  when: ldappkstat.stat.exists == False
-
-- name: Convert LdapPublicKey schema to ldif format
-  command: "{{ ldap_bin_dir }}/schema2ldif {{ ldap_schema_dir }}/{{ ldapPublicKey }}.schema"
-  become: true
-  become_user: "{{ ldap_user }}"
-  when: ldappkstat.stat.exists == False
-
-- name: Fetch eduMember schema
-  become: true
-  get_url:
-    owner: "{{ ldap_user }}"
-    group: "{{ ldap_user }}"
-    url: "{{ eduMemberSchema_url }}"
-    dest: "{{ ldap_schema_dir }}/{{ eduMember }}.schema"
-  when: edumemberstat.stat.exists == False
-
-- name: Convert eduMember schema to ldif format
-  command: "{{ ldap_bin_dir }}/schema2ldif {{ ldap_schema_dir }}/{{ eduMember }}.schema"
-  become: true
-  become_user: "{{ ldap_user }}"
-  when: edumemberstat.stat.exists == False
-
-- name: Fetch voPerson ldif
-  become: true
-  get_url:
-    owner: "{{ ldap_user }}"
-    group: "{{ ldap_user }}"
-    url: "{{ voPersonLdif_url }}"
-    dest: "{{ ldap_schema_dir }}/{{ voPerson }}.ldif"
-  when: vopersonstat.stat.exists == False
-
-# OpenLDAP does not like adding existing entries again. Only add the
-# schema if it has not been added already. This does not yet take care
-# of changes in the eduPerson schema.
-- name: Check if eduPerson schema is already present
-  shell: >
+# OpenLDAP does not like adding existing entries again, so first check which schemas
+# have been defined
+- name: Check for defined ldap schemas
+  command: >
     ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b 'cn=schema,cn=config' '(cn=*)' dn
-    | grep -i 'cn={[0123456789]\+}eduperson,cn=schema,cn=config'
-  failed_when: not [0, 1]
-  register:
-    eduPersonSchemaPresent
+  register: ldap_schemas_present
+  changed_when: false
 
-# Based on the success or failure of copying the eduPerson schema add
-# the schema to the ldap database. Copying the same file in the previous
-# task, would lead to not registering the edoPersonSchema variable.
-- name: Ensure the eduPerson schema is added to LDAP
-  become: true
+# Add schemas to ldap
+- name: Add schemas to ldap
   command: >
     ldapadd -Q -Y EXTERNAL -H ldapi:///
-    -f {{ ldap_schema_dir }}/{{ eduPersonSchema_ldif }}
+    -f {{ ldap_schema_dir }}/schema-{{ item }}.ldif
     -D "cn=config" -w "{{ ldap_password }}"
-  when: eduPersonSchemaPresent.stdout == ""
-
-- name: Check if the ldapPublicKey schema is already present
-  shell: >
-    ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b 'cn=schema,cn=config' '(cn=*)' dn
-    | grep -i 'cn={[0-9]\+}openssh-lpk-openldap,cn=schema,cn=config'
-  failed_when: not [0, 1]
-  register:
-    ldapPublicKeyTask
-
-- name: Ensure the ldapPublicKey schema is added to LDAP
-  become: true
-  command: >
-    ldapadd -Q -Y EXTERNAL -H ldapi:///
-    -f "{{ ldap_schema_dir }}/{{ ldapPublicKey_ldif }}"
-    -D "cn=config" -w "{{ ldap_password }}"
-  when: ldapPublicKeyTask.stdout == ""
-
-- name: Check if the eduMember schema is already present
-  shell: >
-    ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b 'cn=schema,cn=config' '(cn=*)' dn
-    | grep -i 'cn={[0-9]\+}edumember,cn=schema,cn=config'
-  failed_when: not [1, 2]
-  register:
-    eduMemberTask
-
-- name: Ensure the eduMember schema is added to LDAP
-  become: true
-  command: >
-    ldapadd -Q -Y EXTERNAL -H ldapi:///
-    -f "{{ ldap_schema_dir }}/{{ eduMember_ldif }}"
-    -D "cn=config" -w "{{ ldap_password }}"
-  when: eduMemberTask.stdout == ""
-
-- name: Check if the voPerson schema is already present
-  shell: >
-    ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b 'cn=schema,cn=config' '(cn=*)' dn
-    | grep -i 'cn={[0-9]\+}voperson,cn=schema,cn=config'
-  failed_when: not [1, 2]
-  register:
-    voPersonTask
-
-- name: Ensure the voPerson schema is added to LDAP
-  become: true
-  command: >
-    ldapadd -Q -Y EXTERNAL -H ldapi:///
-    -f "{{ ldap_schema_dir }}/{{ voPerson_ldif }}"
-    -D "cn=config" -w "{{ ldap_password }}"
-  when: voPersonTask.stdout == ""
-
+  when: item not in ldap_schemas_present.stdout
+  with_items: "{{ ldap_schemas }}"
 - name: Check if DIT has been created before
   command:
     ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b "{{ ldap.basedn }}" "(ou=group)" dn
