@@ -67,25 +67,16 @@
     - { src: "initial_setup.ldif.j2", dest: "initial_setup.ldif" }
     - { src: "enable_syncprov.ldif.j2", dest: "enable_syncprov.ldif" }
 
-- name: Set database suffix
+- name: Set config for main ldap database
   ldap_attr:
     dn: "olcDatabase={1}mdb,cn=config"
-    name: "olcSuffix"
-    values: "{{ ldap.basedn }}"
-
-- name: Set ldap admin user
-  ldap_attr:
-    dn: "olcDatabase={1}mdb,cn=config"
-    name: "olcRootDN"
-    values: "{{ ldap.binddn }}"
-
-- name: Set ldap admin password
-  ldap_attr:
-    dn: "olcDatabase={1}mdb,cn=config"
-    name: "olcRootPW"
-    values: "{{ ldap_password | slapd_hash }}"
+    name: "{{ item.key }}"
+    values: "{{ item.value }}"
     state: exact
-
+  with_dict:
+    olcSuffix: "{{ ldap.basedn }}"
+    olcRootDN: "{{ ldap.binddn }}"
+    olcRootPW: "{{ ldap_password | slapd_hash }}"
 
 - name: Set loglevel to stats
   #command: ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f "{{ ldap_schema_dir }}/set_loglevel_stats.ldif"
