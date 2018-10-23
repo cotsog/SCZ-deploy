@@ -5,7 +5,8 @@ ansible_ssh_common_args: '-o StrictHostKeyChecking=false'
 ansible_ssh_user: "vagrant"
 ansible_ssh_private_key_file: "{{inventory_dir}}/../../.vagrant/id_rsa"
 
-secrets_file: "environments/vm/secrets/all.yml"
+secrets_files:
+  - "environments/vm/secrets/all.yml"
 
 admin_email: "admin@{{base_domain}}"
 

@@ -4,7 +4,8 @@
   serial: 20
   tasks:
     - name: Read vars from secrets file
-      include_vars: "{{ secrets_file }}"
+      include_vars: "{{ item }}"
+      with_items: "{{ secrets_files }}"
       tags: always
 
 # first gather facts from all hosts that we're actually deploying to
