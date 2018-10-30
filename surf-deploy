@@ -48,6 +48,7 @@ then
 elif [ "$1" = "--sandbox" ]
 then
     ENV=sandbox
+    EXTRA="${EXTRA} --ask-vault-pass"
     shift
 fi
 
