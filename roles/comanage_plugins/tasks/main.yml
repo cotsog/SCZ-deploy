@@ -77,7 +77,7 @@
 
 - name: Configure JsonLog for ZoneProvisioner
   blockinfile:
-    path: "{{ comanage_path }}/app/local/Config/bootstrap.php"
+    path: "{{ comanage_path }}/local/Config/bootstrap.php"
     create: yes
     follow: yes
     marker: "// {mark} ANSIBLE MANAGED BLOCK"
@@ -87,3 +87,8 @@
         'types' => array('json_err','json_not'),
         'path' => '{{ comanage_path }}/local/tmp/logs',
       ));
+
+- name: Remove file in incorrect location
+  file:
+    path: "{{ comanage_path }}/app/local"
+    state: absent
