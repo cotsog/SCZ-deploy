@@ -1,3 +1,8 @@
 ---
+- name: restart nginx
+  systemd:
+    name: nginx
+    state: restarted
+
 - name: restart WebSSO daemon
   systemd: daemon_reload=yes name=websso-daemon state=restarted enabled=yes
