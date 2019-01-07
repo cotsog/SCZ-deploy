@@ -5,8 +5,7 @@
     state: present
     install_recommends: no
   with_items:
-    - libnss-ldap
-    - nscd
+    - libnss-ldapd
     - libpam-python
     - pamtester
     - libxml2-dev
@@ -34,45 +33,34 @@
 - name: install PAM WebSSO
   pip:
     name: "{{ pam_websso.project_dir }}"
-    #state: latest
   when: pam_websso_git.changed
-
-- name: install PAM WebSSO configuration
-  template:
-    src: "pam-websso.j2"
-    dest: "/etc/pam.d/pam-websso"
 
 - name: install PAM WebSSO settings
   template:
     src: "pam_websso.json.j2"
     dest: "{{ pam_websso.project_dir }}/pam_websso.json"
 
-- name: install NSS LDAP settings
+- name: install nslcd config
   template:
-    src: "libnss-ldap.conf.j2"
-    dest: "/etc/libnss-ldap.conf"
-
-- name: install NSS LDAP root pwd
-  template:
-    src: "pam_ldap.secret.j2"
-    dest: "/etc/pam_ldap.secret"
+    src: "nslcd.conf.j2"
+    dest: "/etc/nslcd.conf"
 
 - name: Copy PAM mkhomedir conf
   copy:
     src: "mkhomedir"
     dest: "/usr/share/pam-configs"
 
-- name: Add LDAP nsswitch lookup
+- name: Add LDAP nsswitch passwd lookup
   replace:
     path: /etc/nsswitch.conf
-    regexp: '^(passwd:.*compat)$'
+    regexp: '^(passwd:.*systemd)$'
     replace: '\1 ldap'
     backup: yes
 
-- name: Add LDAP nsswitch lookup
+- name: Add LDAP nsswitch group lookup
   replace:
     path: /etc/nsswitch.conf
-    regexp: '^(group:.*compat)$'
+    regexp: '^(group:.*systemd)$'
     replace: '\1 ldap'
     backup: yes
 
@@ -92,5 +80,15 @@
       \n\nsession required pam_mkhomedir.so umask=0022 skel=/etc/skel\1
     backup: yes
 
-- name: Restart nscd server
-  service: name=nscd state=restarted
+- name: Check for ChallengeResponseAuthentication in sshd
+  shell: grep 'ChallengeResponseAuthentication yes' /etc/ssh/sshd_config
+  register: cra_check
+  ignore_errors: true
+
+- name: Enable ssh ChallengeResponseAuthentication
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '(\nUsePAM yes)\n\n'
+    replace: '\1\nChallengeResponseAuthentication yes\n\n'
+    backup: yes
+  when: cra_check is failed

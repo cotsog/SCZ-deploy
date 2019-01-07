@@ -37,43 +37,17 @@
     mode: 0755
 
 - block:
-    - name: fetch SATOSA from {{ satosa_repo_url }}, version {{ satosa_repo_version }}
-      git:
-        repo: "{{ satosa_repo_url }}"
-        dest: "{{ satosa_src_dir }}"
-        version: "{{ satosa_repo_version }}"
-        accept_hostkey: "yes"
-        force: "yes"
-      register: satosa_git
+    # requirements.txt can be generated from virtualenv/bin/pip freeze
+    - name: Generate requirements.txt.j2 from template
+      template:
+        src: "requirements.txt.j2"
+        dest: "{{ satosa_project_dir }}/requirements.txt"
 
-    - name: >
-        fetch SATOSA micro_services from {{ satosa_microservices_repo_url }},
-        version {{ satosa_microservices_repo_version }}
-      git:
-        repo: "{{ satosa_microservices_repo_url }}"
-        dest: "{{ satosa_microservices_src_dir }}"
-        version: "{{ satosa_microservices_repo_version }}"
-        accept_hostkey: "yes"
-        force: "yes"
-      register: satosa_microservices_git
-
-    - name: install SATOSA from {{ satosa_src_dir }} to {{ satosa_env_dir }}
+    - name: Install SATOSA from requirements.txt
       pip:
-        name: "{{ satosa_src_dir }}"
+        requirements: "{{ satosa_project_dir }}/requirements.txt"
         virtualenv: "{{ satosa_env_dir }}"
         virtualenv_python: python3
-        state: latest
-      when: satosa_git.changed
-
-    - name: >
-        install SATOSA microservices from {{ satosa_microservices_src_dir }}
-        to {{ satosa_env_dir }}
-      pip:
-        name: "{{ satosa_microservices_src_dir }}"
-        virtualenv: "{{ satosa_env_dir }}"
-        virtualenv_python: python3
-        state: latest
-      when: satosa_microservices_git.changed
 
     - name: Create SATOSA  proxy_conf configuration
       template:
@@ -119,11 +93,6 @@
       template:
         src: custom_logging_service.yaml.j2
         dest: "{{ satosa_env_dir }}/plugins/micro_services/custom_logging_service.yaml"
-
-    - name: Create db_acl.yaml definition
-      template:
-        src: db_acl.yaml.j2
-        dest: "{{ satosa_env_dir }}/plugins/micro_services/db_acl.yaml"
 
     - name: Create db_attributes_store.yaml definition
       template:

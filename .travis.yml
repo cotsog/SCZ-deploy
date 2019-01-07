@@ -1,12 +1,10 @@
 ---
-# Use containers instead of full VMs for faster startup.
 sudo: required
 
 services:
   - docker
 
 notifications:
-  # default: send to commiter
   email:
     on_success: change
     on_failure: always
@@ -14,40 +12,53 @@ notifications:
     on_success: always
     on_failure: always
     rooms:
-      secure: "GwjWmymXdHh3pyaDtriIrGyBqQGpFvS2sCa9yrO5xKrnPh0OZtJdVCNKCYREaSsdMp6NYL6EqoQgzABdl8\
-               ErK9VQ7ErpUZMuDKhaPZL4LTZ4CfuSdytD7g58Kmx1JYfLe7wuc3iiZi3XXpklK1TScHDyUFFR24imDXHG\
-               f2E/DPSsB6AJGrtqsHtjDE6u6f8XTuq5oEIXGinM50kgzjZamnpgD8Hzms/Jon4wIADy0iabIKaJeNZYsv\
-               VgWDP5lckIgRo6YmanTETiUCvOp3NIdcOAjilsEUiJbCAIB/aJ1TaRu3z5R295shgfBpPaz/a47zTCbeeq\
-               XMQJ604Mtg4CHRe7S54Fv+whIDGejA3LcEcM4/cxjG3kS3iyXRb6sHMpS7gqUgamjEd2EImcigElsxat4b\
-               KkKU13IPNbB4seVDdyXoAIBlkmJTNtzt1vH5DAFU5WHRO+qyOc3YxgX63cYJBcNxFZyZe63UuUSll20/5n\
-               jpCBGyVE1YW8rD2iMO/V+HxMY0wQiMyS855q5v9ayi7T5r7oaj98DfXUzzAP8VMKIITAYGiZpQeT5dDO63\
-               Ula3eJBTYTcHdpb37KrowB731sox8cBH9A5uAufdgxgUE/c3xo+kBVVLgt13lmBjmMqEdEN6pr8wSueSeI\
-               WIdQczg4EOJTLEMVgFBdCmd8f04="
+      - surfnet-nl:tEtfF52tuZaz02sdjLJ2XGUY
 
-# the syntax check scripts as well as yamllint need python3
 language: python
-cache: pip
 python:
   - 3.6
 
-# disable the default submodule logic, as travis can't reach gitlab anyway
+cache:
+  pip: true
+  directories:
+    - "$HOME/docker"
+
 git:
   submodules: false
 
-addons:
-  apt:
-    packages:
-      - bridge-utils
-      - python3-jinja2
-      - python3-yaml
-
 before_install:
-  - sudo pip install yamllint
+  - pip install yamllint jinja2 pyyaml
   - sudo wget https://releases.hashicorp.com/vagrant/2.1.2/vagrant_2.1.2_x86_64.deb -P /tmp
   - sudo dpkg -i /tmp/vagrant_2.1.2_x86_64.deb
   - sudo apt-add-repository -y ppa:ansible/ansible-2.6
   - sudo apt -q update
-  - sudo apt -y install ansible
+  - sudo apt -y install ansible bridge-utils
+  - sudo adduser travis docker
+  - |
+    # load docker images from cache
+    if [ -d $HOME/docker ]; then
+      for f in $HOME/docker/*.tar.gz;
+      do
+        echo "Loading '$f' into docker";
+        zcat "$f" | docker load || true;
+      done;
+    fi
 
 script:
-  - sudo ./scripts/travis_tests
+  - ./scripts/travis_tests
+
+before_cache:
+  - "ls -la $HOME/docker"
+  - |
+    # save docker images to cache
+    export IMG=$( docker images --format '{{.ID}}' scz-base );
+    echo "scz-image is id ${IMG}";
+    if ! [ -e $HOME/docker/$IMG.tar.gz ]; then
+      echo "scz-base image has changed, clearing out cache and writing new image"
+      rm -rf $HOME/docker;
+      mkdir -p $HOME/docker;
+      docker save scz-base | gzip -c6 > $HOME/docker/${IMG}.tar.gz;
+    else
+      echo "scz-base image exists; nothing to do"
+    fi
+  - "ls -la $HOME/docker"
