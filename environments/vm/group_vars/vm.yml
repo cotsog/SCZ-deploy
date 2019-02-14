@@ -8,19 +8,20 @@ base_domain: "scz-vm.net"
 
 # externally visible!
 hostnames:
-  proxy:    proxy.{{base_domain}}
-  mdq:      mdq.{{base_domain}}
-  consent:  cm.{{base_domain}}
-  comanage: comanage.{{base_domain}}
-  ldap:     ldap.{{base_domain}}
-  meta:     meta.{{base_domain}}
-  oidc:     oidc-test.{{base_domain}}
-  sp:       sp-test.{{base_domain}}
-  idp:      idp-test.{{base_domain}}
-  google:   google-test.{{base_domain}}
-  pam:      pam.{{base_domain}}
-  orcid:    orcid-test.{{base_domain}}
-  ms:       ms-test.{{base_domain}}
+  proxy:     proxy.{{base_domain}}
+  mdq:       mdq.{{base_domain}}
+  consent:   cm.{{base_domain}}
+  comanage:  comanage.{{base_domain}}
+  ldap:      ldap.{{base_domain}}
+  meta:      meta.{{base_domain}}
+  oidc:      oidc-test.{{base_domain}}
+  sp:        sp-test.{{base_domain}}
+  idp:       idp-test.{{base_domain}}
+  google:    google-test.{{base_domain}}
+  pam:       pam.{{base_domain}}
+  orcid:     orcid-test.{{base_domain}}
+  ms:        ms-test.{{base_domain}}
+  nextcloud: nextcloud.{{base_domain}}
 
 idp_test_port: 81
 sp_test_port: 82

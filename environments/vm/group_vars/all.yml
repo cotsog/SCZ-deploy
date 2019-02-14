@@ -108,3 +108,6 @@ comanage_proxy_attribute: "cmuid"
 
 php_debug: true
 php_xdebug_host: "{{iprange.bastion}}"
+
+docker_ports:
+  nextcloud: 8001
