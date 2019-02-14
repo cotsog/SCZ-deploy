@@ -7,6 +7,7 @@
         name:
           - apache2
           - libapache2-mod-auth-openidc
+          - python-docker
 
     - name: Remove any existing Docker packages
       apt:
@@ -82,6 +83,11 @@
         chdir: "{{ sbs_workdir }}"
       register: docker_pull
       changed_when: "'downloading' in docker_pull.stderr"
+
+    - name: Pull fresh SBS docker image
+      docker_image:
+        repository: "{{ sbs_image_repository }}/{{ sbs_server_image }}:{{ sbs_server_version }}"
+        name: "{{ sbs_image_repository }}/{{ sbs_server_image }}:{{ sbs_server_version }}"
 
     - name: Build dockers
       command: "docker-compose up --build --no-start --remove-orphans"
