@@ -5,11 +5,6 @@
     - name: Install required packages
       apt:
         name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - gnupg2
-          - software-properties-common
           - apache2
           - libapache2-mod-auth-openidc
           - python-docker
@@ -77,18 +72,22 @@
         dest: "{{ sbs_workdir }}/{{ item }}"
       with_items:
         - docker-compose.yml
-        - sbs.service
         - disclaimer.css
         - alembic.ini
         - config.yml
         - .env
 
-    - name: Copy sbs.service in /etc/systemd/system
-      file:
-        path: /etc/systemd/system/sbs.service
-        state: link
-        src: "{{ sbs_workdir }}/sbs.service"
-        force: yes
+    - name: Pull docker images
+      command: "docker-compose pull"
+      args:
+        chdir: "{{ sbs_workdir }}"
+      register: docker_pull
+      changed_when: "'downloading' in docker_pull.stderr"
+
+    - name: Pull fresh SBS docker image
+      docker_image:
+        repository: "{{ sbs_image_repository }}/{{ sbs_server_image }}:{{ sbs_server_version }}"
+        name: "{{ sbs_image_repository }}/{{ sbs_server_image }}:{{ sbs_server_version }}"
 
     - name: Pull fresh SBS docker image
       docker_image:
@@ -96,9 +95,27 @@
         name: "{{ sbs_image_repository }}/{{ sbs_server_image }}:{{ sbs_server_version }}"
 
     - name: Build dockers
-      shell: /usr/local/bin/docker-compose up --no-start
+      command: "docker-compose up --build --no-start --remove-orphans"
       args:
         chdir: "{{ sbs_workdir }}"
+      register: docker_build
+      changed_when: "'creating' in docker_build.stderr"
+
+    - name: Copy sbs.service in /etc/systemd/system
+      template:
+        src: sbs.service.j2
+        dest: /etc/systemd/system/sbs.service
+        force: yes
+      register: sbs_service
+
+    - name: Enable sbs
+      systemd:
+        name: "sbs.service"
+        daemon_reload: "{{ sbs_service.changed }}"
+        enabled: yes
+        state: >-
+          {{ ( sbs_service.changed or docker_pull.changed or docker_build.changed )
+          | ternary('restarted','started') }}
 
     - name: enable Apache modules
       apache2_module:
