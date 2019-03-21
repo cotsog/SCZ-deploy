@@ -8,3 +8,4 @@ logs/
 *.pyc
 *~
 core
+geckodriver.log
