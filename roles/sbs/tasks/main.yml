@@ -1,0 +1,124 @@
+---
+
+- name: install sbs
+  block:
+    - name: Install required packages
+      apt:
+        name:
+          - apache2
+          - libapache2-mod-auth-openidc
+
+    - name: Remove any existing Docker packages
+      apt:
+        state: absent
+        name:
+          - docker
+          - docker-engine
+          - docker.io
+          - containerd
+          - runc
+
+    - name: install Docker key
+      apt_key:
+        data: "{{ lookup('file', 'docker.gpg') }}"
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable"
+        state: present
+
+    - name: Install docker-ce packages
+      apt:
+        update_cache: yes
+        name:
+          - docker-ce
+
+    - name: Download latest Docker Compose
+      get_url:
+        url: "{{ docker_compose_latest }}"
+        checksum: "{{ docker_compose_checksum }}"
+        dest: /usr/local/bin/docker-compose
+        mode: 0755
+
+    - name: Create SBS docker compose directory
+      file:
+        path: "{{ sbs_workdir }}"
+        state: directory
+        mode: 0755
+
+    - name: Create SBS docker compose directories
+      file:
+        path: "{{ sbs_workdir }}/{{ item }}"
+        state: directory
+        mode: 0755
+      with_items:
+        - etc
+        - log
+        - data
+
+    - name: Copy files from /etc
+      copy:
+        src: "{{ item }}"
+        dest: "{{ sbs_workdir }}/{{ item }}"
+      with_items:
+        - etc/init.sql
+        - etc/mysql.cnf
+
+    - name: Copy files from template
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ sbs_workdir }}/{{ item }}"
+      with_items:
+        - docker-compose.yml
+        - disclaimer.css
+        - alembic.ini
+        - config.yml
+        - .env
+
+    - name: Pull docker images
+      command: "docker-compose pull"
+      args:
+        chdir: "{{ sbs_workdir }}"
+      register: docker_pull
+      changed_when: "'downloading' in docker_pull.stderr"
+
+    - name: Build dockers
+      command: "docker-compose up --build --no-start --remove-orphans"
+      args:
+        chdir: "{{ sbs_workdir }}"
+      register: docker_build
+      changed_when: "'creating' in docker_build.stderr"
+
+    - name: Copy sbs.service in /etc/systemd/system
+      template:
+        src: sbs.service.j2
+        dest: /etc/systemd/system/sbs.service
+        force: yes
+      register: sbs_service
+
+    - name: Enable sbs
+      systemd:
+        name: "sbs.service"
+        daemon_reload: "{{ sbs_service.changed }}"
+        enabled: yes
+        state: >-
+          {{ ( sbs_service.changed or docker_pull.changed or docker_build.changed )
+          | ternary('restarted','started') }}
+
+    - name: enable Apache modules
+      apache2_module:
+        name: "{{item}}"
+        state: present
+      with_items:
+        - auth_openidc
+        - proxy
+        - proxy_http
+
+    - name: Configure Apache vhost
+      template:
+        src: sbs.conf.j2
+        dest: /etc/apache2/sites-enabled/sbs.conf
+      notify: restart Apache
+
+  when: sbs_enabled
