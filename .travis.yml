@@ -37,6 +37,11 @@ git:
   submodules: false
 
 before_install:
+  - |
+    sudo tee /etc/resolvconf/resolv.conf.d/tail <<EOF
+    options attempts:5
+    EOF
+  - sudo service resolvconf restart
   - pip install yamllint jinja2 pyyaml
   - sudo wget https://releases.hashicorp.com/vagrant/2.1.2/vagrant_2.1.2_x86_64.deb -P /tmp
   - sudo dpkg -i /tmp/vagrant_2.1.2_x86_64.deb
